@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <title>LC Dashboard</title>
+</head>
+<body>
+    <h1>Lovly Cafe Dashboard</h1>
+    <div class="centered-div">
+        <div class="table-box">
+            <form action="/search" method="post">
+                <h2>Список товаров</h2>
+                <input type="text" id="search_term" name="search_term"><br><br>
+                <input type="submit" value="Поиск">
+            </form>
+            <form id="toggleForm" method="post" action="/toggle_status_or_delete">
+                <button type="button" id="selectBtn">Всё</button>
+                <button type="submit" name="action" value="in_stock">В наличии</button>
+                <button type="submit" name="action" value="out_of_stock">Нет в наличии</button>
+                <button type="submit" name="action" value="delete">Удалить</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll"></th>
+                            <th>Название</th>
+                            <th>Цена</th>
+                            <th>Статус</th>
+                            <th>Изображение</th>
+                            <th>Группа</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td><input type="checkbox" name="selected_products" value="{{ product[0] }}"></td>
+                            <td>{{ product[1] }}</td>
+                            <td>{{ product[3] }}</td>
+                            <td>{{ product[4] }}</td>
+                            <td>
+                                {% if product[2] %}
+                                <img src="{{ url_for('static', filename='img/' + product[2]) }}" alt="{{ product[1] }}">
+                                {% else %}
+                                <p>Нет изображения</p>
+                                {% endif %}
+                            </td>
+                            <td>{{ product[5] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+            </form>
+        </div>
+        <div class="add-product-box">
+            <form action="/add_product" method="post" enctype="multipart/form-data">
+                <h2>Добавление нового товара</h2>
+                <label for="name">Название товара:</label><br>
+                <input type="text" id="name" name="name"><br>
+                <label for="image">Выберите картинку:</label><br>
+                <input type="file" id="image" name="image"><br>
+                <label for="price">Цена:</label><br>
+                <input type="text" id="price" name="price"><br>
+                <label for="status">Статус:</label><br>
+                <select id="status" name="status">
+                    <option value="В наличии">В наличии</option>
+                    <option value="Нет в наличии">Нет в наличии</option>
+                </select><br>
+                <label for="status">Группа:</label><br>
+                <select id="product_group" name="product_group">
+                    {% for group in groups %}
+                        <option value="{{ group[1] }}">{{ group[1] }}</option>
+                    {% endfor %}
+                </select><br><br>
+                <input type="submit" value="Добавить товар">
+            </form>
+        </div>
+
+        <div class="add-group-box">
+            <form action="/add_group" method="post">
+                <h2>Редактор групп</h2>
+                <label for="group_name">Название группы:</label><br>
+                <input type="text" id="group_name" name="name"><br>
+                <input type="submit" value="Добавить группу">
+            </form>
+            
+            <form action="/delete_groups" method="post">
+                <h3>Список существующих групп:</h3>
+                <ul>
+                    {% for group in groups %}
+                    <li>
+                        <input type="checkbox" name="selected_groups" value="{{ group[0] }}">
+                        {{ group[1] }} <!-- Это выводит название группы -->
+                    </li>
+                    {% endfor %}
+                </ul>
+                <input type="submit" value="Удалить выбранные группы">
+            </form>
+        </div>
+        <div class="bot-output-box">
+            <h2>Bot </h2>
+            <button id="runPythonBtn">Запустить</button>
+            <h3>Output:</h3>
+            <pre>{{ output }}</pre>
+        </div>        
+    </div>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script>
+            // Функция для выбора всех чекбоксов
+            document.getElementById('selectBtn').addEventListener('click', function() {
+                var checkboxes = document.querySelectorAll('input[name="selected_products"]');
+                checkboxes.forEach(function(checkbox) {
+                    checkbox.checked = true;
+                });
+            });
+            
+            // Обработчик события для чекбокса "Выбрать все"
+            document.getElementById('selectAll').addEventListener('change', function() {
+                var checkboxes = document.querySelectorAll('input[name="selected_products"]');
+                checkboxes.forEach(function(checkbox) {
+                    checkbox.checked = this.checked;
+                }, this);
+            });
+            
+            // Обработчик события для кнопки "Запустить"
+            document.getElementById('runPythonBtn').addEventListener('click', function() {
+                // Показываем загрузку
+                document.querySelector('.bot-output-box pre').innerText = 'Загрузка...';
+                
+                // Запускаем отображение слова "работает" через 10 секунд
+                setTimeout(function() {
+                    document.querySelector('.bot-output-box pre').innerText = 'Работает';
+                }, 10000);
+                
+                // Отправка запроса на сервер
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', '/run_python_script', true);
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState == 4 && xhr.status == 200) {
+                        // Обновление вывода
+                        document.querySelector('.bot-output-box pre').innerText = xhr.responseText;
+                    }
+                };
+                xhr.send();
+            });            
+        </script>
+        
+</body>
+</html>
